@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  /* Additional spin-slow utility */
+  --animate-spin-slow: spin 10s linear infinite;
+}
+
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 10s linear infinite;
+  }
+}
+
+/* Custom Aerodynamics Particles Animations */
+@keyframes windFlow1 {
+  0% { transform: translateX(-100px); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateX(800px); opacity: 0; }
+}
+
+@keyframes windFlow2 {
+  0% { transform: translateX(-150px); opacity: 0; }
+  15% { opacity: 0.7; }
+  85% { opacity: 0.7; }
+  100% { transform: translateX(900px); opacity: 0; }
+}
+
+@keyframes windFlow3 {
+  0% { transform: translateX(-80px); opacity: 0; }
+  5% { opacity: 0.5; }
+  95% { opacity: 0.5; }
+  100% { transform: translateX(750px); opacity: 0; }
+}
+
+@keyframes windFlow4 {
+  0% { transform: translateX(-200px); opacity: 0; }
+  20% { opacity: 0.4; }
+  80% { opacity: 0.4; }
+  100% { transform: translateX(850px); opacity: 0; }
+}
+
+@keyframes windFlow5 {
+  0% { transform: translateX(-120px); opacity: 0; }
+  12% { opacity: 0.6; }
+  88% { opacity: 0.6; }
+  100% { transform: translateX(820px); opacity: 0; }
+}
+
+.animate-wind-1 {
+  animation: windFlow1 3s linear infinite;
+}
+
+.animate-wind-2 {
+  animation: windFlow2 2.2s linear infinite;
+}
+
+.animate-wind-3 {
+  animation: windFlow3 4s linear infinite;
+}
+
+.animate-wind-4 {
+  animation: windFlow4 2.8s linear infinite;
+}
+
+.animate-wind-5 {
+  animation: windFlow5 3.5s linear infinite;
+}
+
+/* Custom scrollbar adjustments for premium aesthetics */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #070708;
+  color: #f4f4f5;
+  overflow-x: hidden;
+}

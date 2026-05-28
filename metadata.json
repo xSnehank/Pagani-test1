@@ -1,0 +1,6 @@
+{
+  "name": "Pagani Huayra BC Experience",
+  "description": "An interactive, cinematic scrollytelling experience showcasing the high-performance engineering, active aerodynamics, and material composition of the Pagani Huayra BC, integrated with an AI Curator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
