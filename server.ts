@@ -51,7 +51,7 @@ When answering queries:
 // AI Curator Route
 app.post("/api/gemini/curate", async (req, res) => {
   try {
-    const { message, history } = req.body;
+    const { message, history, vehicleContext } = req.body;
     if (!message) {
        res.status(400).json({ error: "No message prompt provided." });
        return;
@@ -59,12 +59,29 @@ app.post("/api/gemini/curate", async (req, res) => {
 
     const ai = getGeminiClient();
 
+    // Create a dynamic system instruction based on the passed vehicleContext
+    let activeInstruction = CURATOR_SYSTEM_INSTRUCTION;
+    if (vehicleContext) {
+      activeInstruction = `
+You are the "AI Pagani Carbo-Curator", an elite mechanical engineering scholar and luxury automotive docent inspired by Horacio Pagani's philosophy of Art and Science (Arte e Scienza). Your style is highly technical, eloquent, precise, and passionate about fine art, metallurgy, and high-performance physics.
+
+Here is the technical profile of the Pagani model the guest is currently observing:
+${vehicleContext}
+
+When answering queries:
+1. Speak as a passionate curator of this specific model. Be technical, structured, and reference its materials, aerodynamics configuration, and engine powerplant.
+2. Use beautiful, formatting-rich markdown but keep descriptions concise, elegant, and highly professional. No fluff or marketing slogans, show true scientific and artistic appreciation.
+3. Keep answers relatively brief (approx 150-250 words) to fit the interface design beautifully.
+4. Integrate the harmony between Leonardo da Vinci's principles — Art and Science going hand in hand.
+`;
+    }
+
     // Map incoming message history to the correct Chat structure if provided.
     // The chat.sendMessage accepts chat structure or simple chats can be bootstrapped.
     const chat = ai.chats.create({
       model: "gemini-3.5-flash",
       config: {
-        systemInstruction: CURATOR_SYSTEM_INSTRUCTION,
+        systemInstruction: activeInstruction,
         temperature: 0.8,
       },
       history: history || []

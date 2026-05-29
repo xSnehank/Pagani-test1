@@ -1,6 +1,6 @@
 {
   "name": "Pagani Huayra BC Experience",
-  "description": "An interactive, cinematic scrollytelling experience showcasing the high-performance engineering, active aerodynamics, and material composition of the Pagani Huayra BC, integrated with an AI Curator.",
+  "description": "An interactive, cinematic scrollytelling museum experience of the Pagani lineages—Zonda, Huayra, Utopia, and Grandi Complicazioni—showcasing engineering, active aerodynamics, and dynamic AI curatorial dialogs.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

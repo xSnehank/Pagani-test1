@@ -2,7 +2,21 @@ import { useState, useEffect, useRef } from "react";
 import { Play, Square, Volume2, ShieldAlert, Zap, Compass, RotateCw } from "lucide-react";
 import engineBlueprint from "../assets/images/pagani_v12_blueprint_1779969766537.png";
 
-export default function V12PerformanceDyno() {
+interface V12PerformanceDynoProps {
+  engineModel?: string;
+  aspiration?: "Naturally Aspirated" | "Twin-Turbocharged";
+  maxHp?: number;
+  maxTorqueVal?: number;
+  peakRpm?: number;
+}
+
+export default function V12PerformanceDyno({
+  engineModel = "Mercedes-AMG M158 Twin-Turbo V12",
+  aspiration = "Twin-Turbocharged",
+  maxHp = 789,
+  maxTorqueVal = 1100,
+  peakRpm = 6200
+}: V12PerformanceDynoProps) {
   const [rpm, setRpm] = useState<number>(1000); // idling
   const [engineStarted, setEngineStarted] = useState<boolean>(false);
   const [muteSound, setMuteSound] = useState<boolean>(false);
@@ -32,7 +46,8 @@ export default function V12PerformanceDyno() {
       const targetFreq1 = 32 + (rpm / 1000) * 14;      // Deep engine block frequency
       const targetFreq2 = 64 + (rpm / 1000) * 28;      // Balanced combustion tone
       const turboFreq = 400 + (rpm / 1000) * 120;     // Turbocharger high-pitched scream
-      const turboVol = Math.max(0, (rpm - 2000) / 11000); // Turbos spool up as RPM climbs
+      // Naturally aspirated engines do not spool twin-scroll turbocharger whine
+      const turboVol = aspiration === "Naturally Aspirated" ? 0 : Math.max(0, (rpm - 2000) / 11000); 
 
       if (osc1Ref.current && osc2Ref.current && filterRef.current && masterGainRef.current) {
         // Smoothly ramp to prevent clicking audio glitches
@@ -52,7 +67,7 @@ export default function V12PerformanceDyno() {
     } catch (e) {
       console.error("Failed to update frequencies:", e);
     }
-  }, [rpm, engineStarted, muteSound]);
+  }, [rpm, engineStarted, muteSound, aspiration]);
 
   const startAcoustics = async () => {
     try {
@@ -155,31 +170,59 @@ export default function V12PerformanceDyno() {
     }
   };
 
-  // Coordinates formatting for Torque & Horsepower Curve plots (torque spikes early, HP builds top-end)
-  // Mapping RPM (750 to 8000) to relative pixel coordinate spaces
-  const hpPlotCurve = "M 50 160 C 120 145, 180 115, 250 82 C 300 58, 380 32, 420 30 C 450 32, 465 52, 480 85";
-  const torqueCurve = "M 50 135 C 100 80, 150 48, 220 40 C 270 41, 330 52, 380 75 C 420 95, 450 120, 480 155";
-
   // Calculate current dynamic spec readings at active RPM
   const calculatePowerAtRpm = (currentRpm: number) => {
-    // Peak HP is 789 at 6200 RPM
-    if (currentRpm < 6200) {
-      return Math.round(180 + ((currentRpm - 1000) * (609 / 5200)));
+    // Peak HP is maxHp at peakRpm
+    if (currentRpm < peakRpm) {
+      const baseHp = Math.round(maxHp * 0.22);
+      return Math.round(baseHp + ((currentRpm - 1000) * ((maxHp - baseHp) / (peakRpm - 1000))));
     } else {
-      return Math.round(789 - ((currentRpm - 6200) * (180 / 1800)));
+      return Math.round(maxHp - ((currentRpm - peakRpm) * (180 / 1800)));
     }
   };
 
   const calculateTorqueAtRpm = (currentRpm: number) => {
-    // Torque flat peaks (1100 Nm) between 2200 and 4500 RPM
-    if (currentRpm < 2200) {
-      return Math.round(750 + ((currentRpm - 1000) * (350 / 1200)));
-    } else if (currentRpm >= 2200 && currentRpm <= 4500) {
-      return 1100;
+    // Torque flat peaks (maxTorqueVal Nm) between peak/3.5 and peak/1.3 RPM
+    const peakStart = Math.round(peakRpm * 0.35);
+    const peakEnd = Math.round(peakRpm * 0.72);
+    if (currentRpm < peakStart) {
+      const baseTorque = Math.round(maxTorqueVal * 0.68);
+      return Math.round(baseTorque + ((currentRpm - 1000) * ((maxTorqueVal - baseTorque) / (peakStart - 1000))));
+    } else if (currentRpm >= peakStart && currentRpm <= peakEnd) {
+      return maxTorqueVal;
     } else {
-      return Math.round(1100 - ((currentRpm - 4500) * (350 / 3500)));
+      return Math.round(maxTorqueVal - ((currentRpm - peakEnd) * (350 / 3000)));
     }
   };
+
+  // Generates dynamic curves perfectly tailored to the specific vehicle's power and torque curves
+  const generateCurves = () => {
+    const pointsCount = 40;
+    const hpPoints = [];
+    const torquePoints = [];
+    
+    for (let i = 0; i <= pointsCount; i++) {
+      const activeRpmPoint = 1000 + (7000 * i) / pointsCount;
+      const x = 50 + (i / pointsCount) * 430;
+      
+      const horsepower = calculatePowerAtRpm(activeRpmPoint);
+      const torque = calculateTorqueAtRpm(activeRpmPoint);
+      
+      // Mathematically accurate dynamic mapping matching the vertical limits of SVG
+      const yHp = 160 - (horsepower / maxHp) * 125;
+      const yTorque = 150 - (torque / maxTorqueVal) * 105;
+      
+      hpPoints.push(`${x.toFixed(1)},${yHp.toFixed(1)}`);
+      torquePoints.push(`${x.toFixed(1)},${yTorque.toFixed(1)}`);
+    }
+    
+    return {
+      hpPlotCurve: `M ${hpPoints.join(" L ")}`,
+      torqueCurve: `M ${torquePoints.join(" L ")}`,
+    };
+  };
+
+  const { hpPlotCurve, torqueCurve } = generateCurves();
 
   const currentHp = calculatePowerAtRpm(rpm);
   const currentTorque = calculateTorqueAtRpm(rpm);
@@ -197,9 +240,9 @@ export default function V12PerformanceDyno() {
         <div className="lg:col-span-8 bg-zinc-950/40 border border-zinc-900 rounded-2xl p-6 flex flex-col justify-between">
           
           <div className="flex justify-between items-center border-b border-zinc-900 pb-4">
-            <div>
+            <div className="animate-fade-in">
               <span className="text-[10px] font-mono text-amber-500 tracking-[0.2em] uppercase">V12 DYNO GRAPH WORKSTATION</span>
-              <h4 className="text-xl font-light text-white font-sans mt-0.5">Mercedes-AMG Performance Curves</h4>
+              <h4 className="text-xl font-light text-white font-sans mt-0.5">{engineModel} Performance Curves</h4>
             </div>
             
             {/* Acoustics Controller button */}
@@ -262,7 +305,7 @@ export default function V12PerformanceDyno() {
               {/* Dynamic interactive markers displaying values on intersection */}
               <circle 
                 cx={50 + ((rpm - 1000) / 7000) * 430}
-                cy={160 - (currentHp / 789) * 125} 
+                cy={160 - (currentHp / maxHp) * 125} 
                 r="4.5" 
                 fill="#EF4444" 
                 stroke="#fff" 
@@ -270,7 +313,7 @@ export default function V12PerformanceDyno() {
               />
               <circle 
                 cx={50 + ((rpm - 1000) / 7000) * 430}
-                cy={150 - (currentTorque / 1100) * 105} 
+                cy={150 - (currentTorque / maxTorqueVal) * 105} 
                 r="4.5" 
                 fill="#3B82F6" 
                 stroke="#fff" 
@@ -285,17 +328,17 @@ export default function V12PerformanceDyno() {
 
             {/* Left and Right vertical legends (HP vs Torque scale indicators) */}
             <div className="absolute left-1 top-4 h-[140px] flex flex-col justify-between items-end text-[8px] font-mono text-red-500/80 pr-1 border-r border-red-500/20">
-              <span>800 HP</span>
-              <span>600 HP</span>
-              <span>400 HP</span>
-              <span>200 HP</span>
+              <span>{maxHp} HP</span>
+              <span>{Math.round(maxHp * 0.75)} HP</span>
+              <span>{Math.round(maxHp * 0.50)} HP</span>
+              <span>{Math.round(maxHp * 0.25)} HP</span>
               <span>0 HP</span>
             </div>
             <div className="absolute right-1 top-4 h-[140px] flex flex-col justify-between items-start text-[8px] font-mono text-blue-500/80 pl-1 border-l border-blue-500/20">
-              <span>1200 Nm</span>
-              <span>900 Nm</span>
-              <span>600 Nm</span>
-              <span>300 Nm</span>
+              <span>{maxTorqueVal} Nm</span>
+              <span>{Math.round(maxTorqueVal * 0.75)} Nm</span>
+              <span>{Math.round(maxTorqueVal * 0.50)} Nm</span>
+              <span>{Math.round(maxTorqueVal * 0.25)} Nm</span>
               <span>0 Nm</span>
             </div>
 
@@ -354,11 +397,15 @@ export default function V12PerformanceDyno() {
           <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-900 flex flex-col space-y-4">
             
             {/* AMG Engine blueprint thumbnail render */}
-            <div className="relative aspect-video rounded-lg overflow-hidden border border-zinc-900 bg-zinc-900/30">
+            <div className="relative aspect-video rounded-lg overflow-hidden border border-zinc-900 bg-zinc-950/40">
               <img 
                 src={engineBlueprint} 
                 alt="AMG V12 Blueprint Detail" 
-                className="w-full h-full object-cover opacity-80"
+                style={{
+                  filter: "invert(1) brightness(1.2) contrast(1.15) hue-rotate(180deg) opacity(0.85)",
+                  mixBlendMode: "screen"
+                }}
+                className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
               />
               <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/70 border border-zinc-800 text-[8px] font-mono text-zinc-400 rounded">

@@ -30,6 +30,7 @@ export interface VehicleLayer {
   color: string;
   description: string;
   hotspots: Hotspot[];
+  image?: string;
 }
 
 export interface AeroTelemetry {
